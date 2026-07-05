@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>194 — Border Control</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,6 +62,18 @@
     text-align: right;
   }
   .officer b { color: var(--foil-bright); font-weight: 400; }
+  .signout {
+    display: block;
+    margin-top: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none; border: none; cursor: pointer;
+    padding: 0;
+  }
+  .signout:hover { color: var(--reject); }
 
   /* Stats */
   .stats {
@@ -122,6 +135,7 @@
     margin-left: 6px;
     color: var(--foil);
   }
+  .right-controls { display: flex; gap: 10px; align-items: center; }
   .search {
     font-family: 'Sora', sans-serif;
     font-size: 13px;
@@ -135,6 +149,21 @@
   .search::placeholder { color: var(--muted); }
   .search:focus { border-color: var(--foil); outline: none; }
   :focus-visible { outline: 2px solid var(--foil-bright); outline-offset: 2px; }
+  .refresh {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .refresh:hover { color: var(--foil-bright); border-color: var(--foil); }
+  .refresh[disabled] { opacity: 0.5; cursor: default; }
 
   /* Queue */
   .queue { display: flex; flex-direction: column; gap: 12px; }
@@ -194,10 +223,11 @@
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
+  .act[disabled] { opacity: 0.5; cursor: default; }
   .act.approve { color: var(--approve); border-color: rgba(76,175,125,0.45); }
-  .act.approve:hover { background: var(--approve); color: var(--ink); }
+  .act.approve:hover:not([disabled]) { background: var(--approve); color: var(--ink); }
   .act.reject { color: var(--reject); border-color: rgba(192,91,91,0.45); }
-  .act.reject:hover { background: var(--reject); color: var(--ink); }
+  .act.reject:hover:not([disabled]) { background: var(--reject); color: var(--ink); }
   .status-pill {
     font-family: 'Share Tech Mono', monospace;
     font-size: 10.5px;
@@ -236,29 +266,150 @@
   }
   .empty p { color: var(--muted); font-size: 13px; margin-top: 10px; }
 
-  .demo-note {
-    margin-top: 40px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10.5px;
-    letter-spacing: 0.14em;
-    color: rgba(124,134,153,0.6);
+  /* Toast */
+  #toast {
+    position: fixed;
+    left: 50%; bottom: 28px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 13px 22px;
+    font-size: 13px;
+    color: var(--paper);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 50;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.err { border-color: rgba(192,91,91,0.6); color: #E58A7C; }
+
+  /* ---------- Auth gate ---------- */
+  #gate {
+    position: fixed; inset: 0;
+    background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    z-index: 100;
+  }
+  .gate-card {
+    width: 100%; max-width: 400px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    padding: 42px 36px;
     text-align: center;
   }
+  .gate-mark {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: 40px;
+    letter-spacing: 0.08em;
+    color: var(--foil);
+  }
+  .gate-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .gate-card form { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+  .gate-card input {
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    color: var(--paper);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 15px 16px;
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .gate-card input:focus { border-color: var(--foil); outline: none; }
+  .gate-card input.code { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5em; font-size: 20px; }
+  .gate-btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: linear-gradient(160deg, var(--foil-bright), var(--foil));
+    padding: 15px 20px;
+    border: none; border-radius: 2px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .gate-btn:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(200,165,94,0.25); }
+  .gate-btn[disabled] { opacity: 0.55; cursor: default; }
+  .gate-msg {
+    margin-top: 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    min-height: 16px;
+    color: var(--muted);
+  }
+  .gate-msg.err { color: #E58A7C; }
+  .gate-back {
+    margin-top: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none; border: none; cursor: pointer;
+  }
+  .gate-back:hover { color: var(--foil-bright); }
+  .hidden { display: none !important; }
 
   @media (max-width: 720px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
     .card { grid-template-columns: 44px 1fr; }
     .actions { grid-column: 1 / -1; justify-content: flex-end; }
     .search { width: 100%; }
+    .right-controls { width: 100%; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- ---------- Auth gate ---------- -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-mark">194</div>
+    <div class="gate-sub">Border Control &middot; Staff only</div>
+
+    <!-- Step 1: request a code -->
+    <form id="email-form">
+      <input id="email" type="email" placeholder="Officer email" required autocomplete="email">
+      <button class="gate-btn" type="submit" id="email-btn">Request code</button>
+    </form>
+
+    <!-- Step 2: enter the code -->
+    <form id="code-form" class="hidden">
+      <input id="code" class="code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      <button class="gate-btn" type="submit" id="code-btn">Verify</button>
+      <button type="button" class="gate-back" id="code-back">Use a different email</button>
+    </form>
+
+    <div class="gate-msg" id="gate-msg"></div>
+  </div>
+</div>
+
+<!-- ---------- Dashboard ---------- -->
+<div class="wrap hidden" id="app">
 
   <header>
     <div class="brand">194<small>Border Control</small></div>
-    <div class="officer">Officer on duty<br><b>E. MACOR</b></div>
+    <div class="officer">Officer on duty<br><b id="officer-name">—</b>
+      <button class="signout" id="signout">Sign out</button>
+    </div>
   </header>
 
   <div class="stats">
@@ -274,130 +425,336 @@
       <button class="tab" data-tab="approved">Approved<span class="count" id="c-approved"></span></button>
       <button class="tab" data-tab="rejected">Rejected<span class="count" id="c-rejected"></span></button>
     </div>
-    <input class="search" id="search" type="text" placeholder="Search name, country, city…">
+    <div class="right-controls">
+      <input class="search" id="search" type="text" placeholder="Search name, country, city…">
+      <button class="refresh" id="refresh" title="Reload from Supabase">↻ Refresh</button>
+    </div>
   </div>
 
   <div class="queue" id="queue"></div>
 
-  <div class="demo-note">DEMO MODE &middot; MOCK DATA &middot; ACTIONS RESET ON REFRESH &middot; NEXT STOP: SUPABASE</div>
-
 </div>
 
-<script>
-  var apps = [
-    { id: 1,  name: "Mateus Oliveira",   flag: "🇧🇷", country: "Brazil",       city: "Miami, FL",        email: "mateus.o@gmail.com",      ig: "mateus.oliv",      date: "Jul 5, 09:12", status: "pending" },
-    { id: 2,  name: "Yuna Kim",          flag: "🇰🇷", country: "South Korea",  city: "Los Angeles, CA",  email: "yunakim@naver.com",       ig: "yuna.kim_",        date: "Jul 5, 08:47", status: "pending" },
-    { id: 3,  name: "Chidi Okafor",      flag: "🇳🇬", country: "Nigeria",      city: "Houston, TX",      email: "c.okafor@outlook.com",    ig: "chidi.okafor",     date: "Jul 5, 08:30", status: "pending" },
-    { id: 4,  name: "Priya Raghavan",    flag: "🇮🇳", country: "India",        city: "San Jose, CA",     email: "priya.r@gmail.com",       ig: "priya.raghavan",   date: "Jul 5, 07:58", status: "pending" },
-    { id: 5,  name: "Valentina Restrepo",flag: "🇨🇴", country: "Colombia",     city: "New York, NY",     email: "vale.restrepo@gmail.com", ig: "vale.restrepo",    date: "Jul 5, 07:21", status: "pending" },
-    { id: 6,  name: "Lukas Brenner",     flag: "🇩🇪", country: "Germany",      city: "Chicago, IL",      email: "l.brenner@gmx.de",        ig: "lukas.brnnr",      date: "Jul 4, 23:44", status: "pending" },
-    { id: 7,  name: "Aiko Tanaka",       flag: "🇯🇵", country: "Japan",        city: "Seattle, WA",      email: "aiko.t@icloud.com",       ig: "aiko_tnk",         date: "Jul 4, 22:10", status: "pending" },
-    { id: 8,  name: "Omar El-Sayed",     flag: "🇪🇬", country: "Egypt",        city: "Jersey City, NJ",  email: "omar.elsayed@gmail.com",  ig: "omar.elsayed",     date: "Jul 4, 21:03", status: "pending" },
-    { id: 9,  name: "Ines Duarte",       flag: "🇵🇹", country: "Portugal",     city: "Boston, MA",       email: "ines.duarte@sapo.pt",     ig: "ines.duarte.pt",   date: "Jul 4, 19:39", status: "pending" },
-    { id: 10, name: "Bartek Kowalski",   flag: "🇵🇱", country: "Poland",       city: "Brooklyn, NY",     email: "bartek.k@wp.pl",          ig: "bartek.kow",       date: "Jul 4, 18:52", status: "pending" },
-    { id: 11, name: "Thao Nguyen",       flag: "🇻🇳", country: "Vietnam",      city: "Garden Grove, CA", email: "thao.ng@gmail.com",       ig: "thao.ngyn",        date: "Jul 4, 17:15", status: "pending" },
-    { id: 12, name: "Santiago Álvarez",  flag: "🇦🇷", country: "Argentina",    city: "Austin, TX",       email: "santi.alv@gmail.com",     ig: "santi.alvz",       date: "Jul 4, 16:02", status: "pending" },
-    { id: 13, name: "Amara Mensah",      flag: "🇬🇭", country: "Ghana",        city: "Washington, DC",   email: "amara.m@yahoo.com",       ig: "amara.mensah",     date: "Jul 4, 14:48", status: "approved" },
-    { id: 14, name: "Elif Yilmaz",       flag: "🇹🇷", country: "Turkey",       city: "Philadelphia, PA", email: "elif.y@hotmail.com",      ig: "elif.ylmz",        date: "Jul 4, 13:20", status: "approved" },
-    { id: 15, name: "Marco Bianchi",     flag: "🇮🇹", country: "Italy",        city: "San Francisco, CA",email: "marco.b@libero.it",       ig: "marco.bianchi.sf", date: "Jul 4, 11:55", status: "approved" },
-    { id: 16, name: "Jake Miller",       flag: "🇺🇸", country: "United States",city: "Denver, CO",       email: "jmiller99@gmail.com",     ig: "jakemiller99",     date: "Jul 4, 10:31", status: "rejected" },
-    { id: 17, name: "Sofia Petrova",     flag: "🇧🇬", country: "Bulgaria",     city: "Nashville, TN",    email: "sofia.p@abv.bg",          ig: "sofia.petrova.bg", date: "Jul 4, 09:17", status: "approved" }
-  ];
+<div id="toast"></div>
 
-  var currentTab = "pending";
-  var query = "";
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+  // ---- Supabase config (anon key is public/client-safe; RLS + is_admin() enforce access) ----
+  const SUPABASE_URL = 'https://eimjjrlhmykxfumwwbre.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpbWpqcmxobXlreGZ1bXd3YnJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjcxMDQsImV4cCI6MjA5ODg0MzEwNH0.7HlqZph8Tb_XYgp75s0VXfzpVfBmV-driJOQZYXWj0A';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ---------- DOM ----------
+  const gate = document.getElementById('gate');
+  const appEl = document.getElementById('app');
+  const emailForm = document.getElementById('email-form');
+  const codeForm = document.getElementById('code-form');
+  const emailInput = document.getElementById('email');
+  const codeInput = document.getElementById('code');
+  const emailBtn = document.getElementById('email-btn');
+  const codeBtn = document.getElementById('code-btn');
+  const gateMsg = document.getElementById('gate-msg');
+
+  function setGateMsg(text, isErr) {
+    gateMsg.textContent = text || '';
+    gateMsg.classList.toggle('err', !!isErr);
+  }
+
+  let toastTimer;
+  function toast(text, isErr) {
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.toggle('err', !!isErr);
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // ---------- Auth flow (email OTP code) ----------
+  emailForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = emailInput.value.trim().toLowerCase();
+    if (!email) return;
+    emailBtn.disabled = true;
+    setGateMsg('Sending code…');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    emailBtn.disabled = false;
+    if (error) { setGateMsg(error.message, true); return; }
+    pendingEmail = email;
+    emailForm.classList.add('hidden');
+    codeForm.classList.remove('hidden');
+    codeInput.focus();
+    setGateMsg('Check ' + email + ' for a 6-digit code.');
+  });
+
+  let pendingEmail = '';
+
+  document.getElementById('code-back').addEventListener('click', () => {
+    codeForm.classList.add('hidden');
+    emailForm.classList.remove('hidden');
+    setGateMsg('');
+    emailInput.focus();
+  });
+
+  codeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = codeInput.value.trim();
+    if (token.length < 6) { setGateMsg('Enter the 6-digit code.', true); return; }
+    codeBtn.disabled = true;
+    setGateMsg('Verifying…');
+    const { error } = await supabase.auth.verifyOtp({ email: pendingEmail, token, type: 'email' });
+    codeBtn.disabled = false;
+    if (error) { setGateMsg(error.message, true); return; }
+    // onAuthStateChange handles the transition into the dashboard.
+  });
+
+  document.getElementById('signout').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+  });
+
+  // React to session changes (login, logout, token refresh, initial load).
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session) {
+      await enterDashboard(session);
+    } else {
+      showGate();
+    }
+  });
+
+  function showGate() {
+    appEl.classList.add('hidden');
+    gate.classList.remove('hidden');
+    codeForm.classList.add('hidden');
+    emailForm.classList.remove('hidden');
+    emailInput.value = '';
+    codeInput.value = '';
+    setGateMsg('');
+  }
+
+  async function enterDashboard(session) {
+    // Authorization: verified server-side by is_admin() (RLS also blocks data for non-admins).
+    const { data: isAdmin, error } = await supabase.rpc('is_admin');
+    if (error) { setGateMsg('Could not verify access: ' + error.message, true); return; }
+    if (!isAdmin) {
+      setGateMsg('This account is not authorized for Border Control.', true);
+      await supabase.auth.signOut();
+      return;
+    }
+    currentUserId = session.user.id;
+    document.getElementById('officer-name').textContent = (session.user.email || '').toUpperCase();
+    gate.classList.add('hidden');
+    appEl.classList.remove('hidden');
+    await loadApps();
+  }
+
+  // ---------- Data ----------
+  let apps = [];
+  let currentUserId = null;
+  let currentTab = 'pending';
+  let query = '';
+
+  async function loadApps() {
+    const refreshBtn = document.getElementById('refresh');
+    refreshBtn.disabled = true;
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    refreshBtn.disabled = false;
+    if (error) { toast('Failed to load applications: ' + error.message, true); return; }
+    apps = data || [];
+    render();
+  }
+
+  document.getElementById('refresh').addEventListener('click', () => {
+    loadApps().then(() => toast('Reloaded.'));
+  });
+
+  // ---------- Rendering ----------
   function counts() {
-    var c = { pending: 0, approved: 0, rejected: 0 };
-    apps.forEach(function (a) { c[a.status]++; });
+    const c = { pending: 0, approved: 0, rejected: 0 };
+    apps.forEach((a) => { if (c[a.status] !== undefined) c[a.status]++; });
     return c;
   }
 
   function renderStats() {
-    var c = counts();
-    var decided = c.approved + c.rejected;
-    var rate = decided ? Math.round((c.approved / decided) * 100) : 0;
-    var countries = {};
-    apps.forEach(function (a) { countries[a.country] = 1; });
-    document.getElementById("stat-total").textContent = apps.length;
-    document.getElementById("stat-pending").textContent = c.pending;
-    document.getElementById("stat-rate").textContent = rate + "%";
-    document.getElementById("stat-countries").textContent = Object.keys(countries).length;
-    document.getElementById("c-pending").textContent = c.pending;
-    document.getElementById("c-approved").textContent = c.approved;
-    document.getElementById("c-rejected").textContent = c.rejected;
+    const c = counts();
+    const decided = c.approved + c.rejected;
+    const rate = decided ? Math.round((c.approved / decided) * 100) : 0;
+    const countries = {};
+    apps.forEach((a) => { if (a.country) countries[a.country.trim().toLowerCase()] = 1; });
+    document.getElementById('stat-total').textContent = apps.length;
+    document.getElementById('stat-pending').textContent = c.pending;
+    document.getElementById('stat-rate').textContent = rate + '%';
+    document.getElementById('stat-countries').textContent = Object.keys(countries).length;
+    document.getElementById('c-pending').textContent = c.pending;
+    document.getElementById('c-approved').textContent = c.approved;
+    document.getElementById('c-rejected').textContent = c.rejected;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+    });
+  }
+
+  function igUrl(handle) {
+    return 'https://instagram.com/' + String(handle || '').replace(/^@+/, '').trim();
   }
 
   function cardHTML(a) {
-    var right;
-    if (a.status === "pending") {
+    const flag = countryFlag(a.country);
+    const igRaw = String(a.instagram || '').replace(/^@+/, '').trim();
+    const ig = igRaw
+      ? '<a class="iglink" href="' + esc(igUrl(igRaw)) + '" target="_blank" rel="noopener noreferrer">@' + esc(igRaw) + ' ↗</a>'
+      : '<span style="color:var(--muted)">no instagram</span>';
+
+    let right;
+    if (a.status === 'pending') {
       right = '<div class="actions">' +
-        '<button class="act approve" onclick="decide(' + a.id + ',\'approved\')">Approve</button>' +
-        '<button class="act reject" onclick="decide(' + a.id + ',\'rejected\')">Reject</button>' +
+        '<button class="act approve" data-id="' + esc(a.id) + '" data-decide="approved">Approve</button>' +
+        '<button class="act reject" data-id="' + esc(a.id) + '" data-decide="rejected">Reject</button>' +
         '</div>';
     } else {
       right = '<div class="actions">' +
-        '<span class="status-pill ' + a.status + '">' + a.status + '</span>' +
-        '<button class="undo" onclick="decide(' + a.id + ',\'pending\')">Undo</button>' +
+        '<span class="status-pill ' + esc(a.status) + '">' + esc(a.status) + '</span>' +
+        '<button class="undo" data-id="' + esc(a.id) + '" data-decide="pending">Undo</button>' +
         '</div>';
     }
-    return '<div class="card" id="card-' + a.id + '">' +
-      '<div class="flag">' + a.flag + '</div>' +
+
+    const cityCountry = [a.country, a.city].filter(Boolean).map(esc);
+    const metaLine = (a.country ? '<b>' + esc(a.country) + '</b>' : '') +
+      (a.city ? ' &middot; ' + esc(a.city) : '') + ' &middot; ' + ig;
+
+    return '<div class="card" id="card-' + esc(a.id) + '">' +
+      '<div class="flag">' + flag + '</div>' +
       '<div class="who">' +
-        '<div class="name">' + a.name + '</div>' +
-        '<div class="meta"><b>' + a.country + '</b> &middot; ' + a.city + ' &middot; ' +
-          '<a class="iglink" href="https://instagram.com/' + a.ig + '" target="_blank" rel="noopener noreferrer">@' + a.ig + ' ↗</a></div>' +
-        '<div class="sub">' + a.email + ' &middot; APPLIED ' + a.date.toUpperCase() + '</div>' +
+        '<div class="name">' + esc(a.name || 'Unknown') + '</div>' +
+        '<div class="meta">' + metaLine + '</div>' +
+        '<div class="sub">' + esc(a.email || '') + ' &middot; APPLIED ' + esc(fmtDate(a.created_at).toUpperCase()) + '</div>' +
       '</div>' + right + '</div>';
   }
 
   function render() {
     renderStats();
-    var q = query.toLowerCase();
-    var list = apps.filter(function (a) {
+    const q = query.toLowerCase();
+    const list = apps.filter((a) => {
       if (a.status !== currentTab) return false;
       if (!q) return true;
-      return (a.name + " " + a.country + " " + a.city).toLowerCase().indexOf(q) !== -1;
+      return ((a.name || '') + ' ' + (a.country || '') + ' ' + (a.city || '')).toLowerCase().indexOf(q) !== -1;
     });
-    var el = document.getElementById("queue");
+    const el = document.getElementById('queue');
     if (!list.length) {
-      var msg = currentTab === "pending" ? "Queue clear" : "Nothing here";
-      var sub = currentTab === "pending" ? "Every application has been processed. The border rests." : "No " + currentTab + " applications" + (q ? " matching your search." : ".");
-      el.innerHTML = '<div class="empty"><div class="big">' + msg + '</div><p>' + sub + '</p></div>';
+      const msg = currentTab === 'pending' ? 'Queue clear' : 'Nothing here';
+      const sub = currentTab === 'pending'
+        ? 'Every application has been processed. The border rests.'
+        : 'No ' + currentTab + ' applications' + (q ? ' matching your search.' : '.');
+      el.innerHTML = '<div class="empty"><div class="big">' + msg + '</div><p>' + esc(sub) + '</p></div>';
       return;
     }
-    el.innerHTML = list.map(cardHTML).join("");
+    el.innerHTML = list.map(cardHTML).join('');
   }
 
-  window.decide = function (id, status) {
-    var card = document.getElementById("card-" + id);
-    var apply = function () {
-      for (var i = 0; i < apps.length; i++) if (apps[i].id === id) apps[i].status = status;
-      render();
-    };
-    if (card && status !== "pending") {
-      card.classList.add("leaving");
-      setTimeout(apply, 280);
-    } else {
-      apply();
-    }
-  };
+  // ---------- Decisions (writes to Supabase) ----------
+  async function decide(id, status) {
+    const row = apps.find((a) => String(a.id) === String(id));
+    if (!row) return;
+    const prevStatus = row.status;
 
-  document.querySelectorAll(".tab").forEach(function (t) {
-    t.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("active"); });
-      t.classList.add("active");
-      currentTab = t.getAttribute("data-tab");
+    const card = document.getElementById('card-' + id);
+    if (card && status !== 'pending') card.classList.add('leaving');
+
+    // Disable this card's buttons to prevent double-submits.
+    if (card) card.querySelectorAll('button').forEach((b) => (b.disabled = true));
+
+    const patch = status === 'pending'
+      ? { status: 'pending', decided_at: null, decided_by: null }
+      : { status: status, decided_at: new Date().toISOString(), decided_by: currentUserId };
+
+    const { error } = await supabase.from('applications').update(patch).eq('id', id);
+
+    if (error) {
+      if (card) {
+        card.classList.remove('leaving');
+        card.querySelectorAll('button').forEach((b) => (b.disabled = false));
+      }
+      toast('Update failed: ' + error.message, true);
+      return;
+    }
+
+    // Apply locally and re-render (keep the animation feel from the prototype).
+    row.status = patch.status;
+    row.decided_at = patch.decided_at;
+    row.decided_by = patch.decided_by;
+    const commit = () => {
+      render();
+      if (status === 'approved') toast('Approved — cleared for entry.');
+      else if (status === 'rejected') toast('Rejected — sent to waitlist.');
+      else toast('Reverted to queue.');
+    };
+    if (card && status !== 'pending') setTimeout(commit, 280);
+    else commit();
+  }
+
+  // Event delegation for approve/reject/undo buttons.
+  document.getElementById('queue').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-decide]');
+    if (!btn || btn.disabled) return;
+    decide(btn.getAttribute('data-id'), btn.getAttribute('data-decide'));
+  });
+
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      currentTab = t.getAttribute('data-tab');
       render();
     });
   });
 
-  document.getElementById("search").addEventListener("input", function (e) {
+  document.getElementById('search').addEventListener('input', (e) => {
     query = e.target.value;
     render();
   });
 
-  render();
+  // ---------- Country name -> flag emoji (best-effort; `country` is free text from the form) ----------
+  const FLAGS = {
+    'united states': '🇺🇸', 'usa': '🇺🇸', 'us': '🇺🇸', 'america': '🇺🇸',
+    'brazil': '🇧🇷', 'brasil': '🇧🇷',
+    'south korea': '🇰🇷', 'korea': '🇰🇷', 'republic of korea': '🇰🇷',
+    'north korea': '🇰🇵',
+    'nigeria': '🇳🇬', 'india': '🇮🇳', 'colombia': '🇨🇴', 'germany': '🇩🇪', 'deutschland': '🇩🇪',
+    'japan': '🇯🇵', 'egypt': '🇪🇬', 'portugal': '🇵🇹', 'poland': '🇵🇱', 'polska': '🇵🇱',
+    'vietnam': '🇻🇳', 'viet nam': '🇻🇳', 'argentina': '🇦🇷', 'ghana': '🇬🇭', 'turkey': '🇹🇷', 'türkiye': '🇹🇷', 'turkiye': '🇹🇷',
+    'italy': '🇮🇹', 'italia': '🇮🇹', 'bulgaria': '🇧🇬', 'mexico': '🇲🇽', 'méxico': '🇲🇽',
+    'china': '🇨🇳', 'france': '🇫🇷', 'spain': '🇪🇸', 'españa': '🇪🇸', 'united kingdom': '🇬🇧', 'uk': '🇬🇧', 'england': '🇬🇧', 'britain': '🇬🇧', 'great britain': '🇬🇧',
+    'canada': '🇨🇦', 'australia': '🇦🇺', 'philippines': '🇵🇭', 'indonesia': '🇮🇩', 'kenya': '🇰🇪',
+    'sweden': '🇸🇪', 'norway': '🇳🇴', 'denmark': '🇩🇰', 'finland': '🇫🇮', 'netherlands': '🇳🇱', 'holland': '🇳🇱',
+    'belgium': '🇧🇪', 'switzerland': '🇨🇭', 'austria': '🇦🇹', 'ireland': '🇮🇪', 'greece': '🇬🇷',
+    'russia': '🇷🇺', 'ukraine': '🇺🇦', 'romania': '🇷🇴', 'hungary': '🇭🇺', 'czech republic': '🇨🇿', 'czechia': '🇨🇿',
+    'pakistan': '🇵🇰', 'bangladesh': '🇧🇩', 'sri lanka': '🇱🇰', 'nepal': '🇳🇵', 'thailand': '🇹🇭',
+    'malaysia': '🇲🇾', 'singapore': '🇸🇬', 'taiwan': '🇹🇼', 'hong kong': '🇭🇰',
+    'south africa': '🇿🇦', 'morocco': '🇲🇦', 'algeria': '🇩🇿', 'tunisia': '🇹🇳', 'ethiopia': '🇪🇹',
+    'peru': '🇵🇪', 'chile': '🇨🇱', 'venezuela': '🇻🇪', 'ecuador': '🇪🇨', 'bolivia': '🇧🇴', 'uruguay': '🇺🇾', 'paraguay': '🇵🇾',
+    'dominican republic': '🇩🇴', 'cuba': '🇨🇺', 'guatemala': '🇬🇹', 'honduras': '🇭🇳', 'el salvador': '🇸🇻', 'costa rica': '🇨🇷', 'panama': '🇵🇦',
+    'israel': '🇮🇱', 'lebanon': '🇱🇧', 'jordan': '🇯🇴', 'saudi arabia': '🇸🇦', 'united arab emirates': '🇦🇪', 'uae': '🇦🇪', 'iran': '🇮🇷', 'iraq': '🇮🇶',
+    'new zealand': '🇳🇿', 'croatia': '🇭🇷', 'serbia': '🇷🇸', 'slovakia': '🇸🇰', 'slovenia': '🇸🇮', 'lithuania': '🇱🇹', 'latvia': '🇱🇻', 'estonia': '🇪🇪'
+  };
+  function countryFlag(name) {
+    if (!name) return '🛂';
+    return FLAGS[String(name).trim().toLowerCase()] || '🛂';
+  }
 </script>
 </body>
 </html>
