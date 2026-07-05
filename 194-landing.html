@@ -260,6 +260,15 @@
     text-transform: uppercase;
   }
   .success p { margin-top: 12px; font-size: 14px; color: var(--muted); }
+  .formerror {
+    display: none;
+    margin-top: 18px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: #E58A7C;
+  }
+  .btn[disabled] { opacity: 0.55; cursor: default; transform: none; box-shadow: none; }
 
   /* ---------- Footer / MRZ ---------- */
   footer { border-top: 1px solid var(--line); padding: 48px 0 40px; }
@@ -340,10 +349,8 @@
       <h2>Join the queue</h2>
       <p class="lede" style="margin:0 auto;">Approval takes time. That's the point.</p>
 
-      <!-- Hook this form to Formspree, Tally, or your own backend:
-           replace YOUR_FORM_ID below with a real Formspree endpoint,
-           e.g. https://formspree.io/f/abcdwxyz -->
-      <form id="waitlist" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <!-- Submits directly to Supabase (see config + handler in the script below). -->
+      <form id="waitlist">
         <input type="text" name="name" placeholder="Full name (as it appears on your passport)" required autocomplete="name">
         <input type="email" name="email" placeholder="Email" required autocomplete="email">
         <input type="text" name="country" placeholder="Country of citizenship" required>
@@ -359,6 +366,8 @@
         <div class="stampword">Received</div>
         <p>Your application is in the queue. We review in order of arrival — watch your inbox.</p>
       </div>
+
+      <p class="formerror" id="formerror" role="alert"></p>
 
       <p class="fineprint">US passport holders will not be admitted. No exceptions.</p>
     </div>
@@ -393,21 +402,68 @@
     }, 2200);
   }
 
-  // Waitlist submit — posts to Formspree if configured, otherwise shows the success state locally
+  // ---- Supabase config ----
+  // The anon key is a public, client-safe key. Row Level Security on the
+  // `applications` table is what actually protects the data: the public may
+  // only INSERT a fresh `pending` row and can read nothing back.
+  var SUPABASE_URL = 'https://eimjjrlhmykxfumwwbre.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpbWpqcmxobXlreGZ1bXd3YnJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjcxMDQsImV4cCI6MjA5ODg0MzEwNH0.7HlqZph8Tb_XYgp75s0VXfzpVfBmV-driJOQZYXWj0A';
+
+  // Waitlist submit — inserts into Supabase `applications`.
   var form = document.getElementById('waitlist');
+  var errEl = document.getElementById('formerror');
+  var btn = form.querySelector('button[type="submit"]');
+
+  function showError(msg) {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+  }
+  function showSuccess() {
+    form.style.display = 'none';
+    errEl.style.display = 'none';
+    document.getElementById('success').style.display = 'block';
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var action = form.getAttribute('action');
-    var done = function () {
-      form.style.display = 'none';
-      document.getElementById('success').style.display = 'block';
+    if (!form.reportValidity()) { return; }
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    // Use form.elements[...] — form.name would resolve to the form's own name attribute, not the input.
+    var f = form.elements;
+    var payload = {
+      name: f['name'].value.trim(),
+      email: f['email'].value.trim().toLowerCase(),
+      country: f['country'].value.trim(),
+      city: f['city'].value.trim(),
+      instagram: f['instagram'].value.trim()
     };
-    if (action.indexOf('YOUR_FORM_ID') !== -1) { done(); return; } // not wired yet — demo mode
-    fetch(action, {
+
+    fetch(SUPABASE_URL + '/rest/v1/applications', {
       method: 'POST',
-      body: new FormData(form),
-      headers: { 'Accept': 'application/json' }
-    }).then(done).catch(done);
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        // return=minimal: do NOT read the row back. Anon has no SELECT policy,
+        // so requesting the row would trip RLS on the read-back.
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
+      if (res.ok) { showSuccess(); return; }            // 201 Created
+      if (res.status === 409) { showSuccess(); return; } // already applied (unique email) — treat as received
+      return res.text().then(function (t) {
+        throw new Error('HTTP ' + res.status + ' ' + t);
+      });
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = 'Request access';
+      showError('Something went wrong submitting your application. Please try again, or email hello@join194.com.');
+      if (window.console) { console.error('Waitlist submit failed:', err); }
+    });
   });
 </script>
 
