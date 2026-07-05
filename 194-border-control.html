@@ -331,7 +331,10 @@
     letter-spacing: 0.04em;
   }
   .gate-card input:focus { border-color: var(--foil); outline: none; }
-  .gate-card input.code { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5em; font-size: 20px; }
+  #sent-panel { margin-top: 30px; }
+  .sent-mark { font-size: 34px; color: var(--foil); }
+  .sent-text { margin-top: 12px; font-size: 14px; color: var(--paper); }
+  .sent-text b { color: var(--foil-bright); font-weight: 500; }
   .gate-btn {
     font-family: 'Sora', sans-serif;
     font-size: 12px;
@@ -385,18 +388,18 @@
     <div class="gate-mark">194</div>
     <div class="gate-sub">Border Control &middot; Staff only</div>
 
-    <!-- Step 1: request a code -->
+    <!-- Step 1: request a magic link -->
     <form id="email-form">
       <input id="email" type="email" placeholder="Officer email" required autocomplete="email">
-      <button class="gate-btn" type="submit" id="email-btn">Request code</button>
+      <button class="gate-btn" type="submit" id="email-btn">Send sign-in link</button>
     </form>
 
-    <!-- Step 2: enter the code -->
-    <form id="code-form" class="hidden">
-      <input id="code" class="code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code">
-      <button class="gate-btn" type="submit" id="code-btn">Verify</button>
-      <button type="button" class="gate-back" id="code-back">Use a different email</button>
-    </form>
+    <!-- Step 2: link sent -->
+    <div id="sent-panel" class="hidden">
+      <div class="sent-mark">✉</div>
+      <p class="sent-text" id="sent-text">Check your inbox and click the sign-in link to enter.</p>
+      <button type="button" class="gate-back" id="sent-back">Use a different email</button>
+    </div>
 
     <div class="gate-msg" id="gate-msg"></div>
   </div>
@@ -450,11 +453,9 @@
   const gate = document.getElementById('gate');
   const appEl = document.getElementById('app');
   const emailForm = document.getElementById('email-form');
-  const codeForm = document.getElementById('code-form');
+  const sentPanel = document.getElementById('sent-panel');
   const emailInput = document.getElementById('email');
-  const codeInput = document.getElementById('code');
   const emailBtn = document.getElementById('email-btn');
-  const codeBtn = document.getElementById('code-btn');
   const gateMsg = document.getElementById('gate-msg');
 
   function setGateMsg(text, isErr) {
@@ -472,43 +473,46 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  // ---------- Auth flow (email OTP code) ----------
+  // Where the magic link should return the user. Must be listed under
+  // Supabase → Authentication → URL Configuration → Redirect URLs.
+  const REDIRECT_TO = window.location.origin + window.location.pathname;
+
+  // ---------- Auth flow (email magic link) ----------
   emailForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = emailInput.value.trim().toLowerCase();
     if (!email) return;
     emailBtn.disabled = true;
-    setGateMsg('Sending code…');
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    setGateMsg('Sending link…');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: REDIRECT_TO }
+    });
     emailBtn.disabled = false;
     if (error) { setGateMsg(error.message, true); return; }
-    pendingEmail = email;
+    document.getElementById('sent-text').innerHTML =
+      'Sign-in link sent to <b>' + esc(email) + '</b>. Click it to enter — you can close this tab.';
     emailForm.classList.add('hidden');
-    codeForm.classList.remove('hidden');
-    codeInput.focus();
-    setGateMsg('Check ' + email + ' for a 6-digit code.');
+    sentPanel.classList.remove('hidden');
+    setGateMsg('');
   });
 
-  let pendingEmail = '';
-
-  document.getElementById('code-back').addEventListener('click', () => {
-    codeForm.classList.add('hidden');
+  document.getElementById('sent-back').addEventListener('click', () => {
+    sentPanel.classList.add('hidden');
     emailForm.classList.remove('hidden');
     setGateMsg('');
     emailInput.focus();
   });
 
-  codeForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const token = codeInput.value.trim();
-    if (token.length < 6) { setGateMsg('Enter the 6-digit code.', true); return; }
-    codeBtn.disabled = true;
-    setGateMsg('Verifying…');
-    const { error } = await supabase.auth.verifyOtp({ email: pendingEmail, token, type: 'email' });
-    codeBtn.disabled = false;
-    if (error) { setGateMsg(error.message, true); return; }
-    // onAuthStateChange handles the transition into the dashboard.
-  });
+  // Surface auth errors handed back in the URL (e.g. expired/used link).
+  (function reportUrlAuthError() {
+    const hash = window.location.hash || '';
+    const m = /error_description=([^&]+)/.exec(hash);
+    if (m) {
+      setGateMsg(decodeURIComponent(m[1].replace(/\+/g, ' ')), true);
+      history.replaceState(null, '', window.location.pathname);
+    }
+  })();
 
   document.getElementById('signout').addEventListener('click', async () => {
     await supabase.auth.signOut();
@@ -526,11 +530,9 @@
   function showGate() {
     appEl.classList.add('hidden');
     gate.classList.remove('hidden');
-    codeForm.classList.add('hidden');
+    sentPanel.classList.add('hidden');
     emailForm.classList.remove('hidden');
     emailInput.value = '';
-    codeInput.value = '';
-    setGateMsg('');
   }
 
   async function enterDashboard(session) {
