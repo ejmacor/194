@@ -58,6 +58,16 @@ create index if not exists applications_created_at_idx  on public.applications (
 
 alter table public.applications enable row level security;
 
+-- Belt-and-suspenders: ensure the API roles have the table privileges RLS gates.
+-- (Supabase grants these by default; explicit here so a re-run is self-contained.)
+grant insert on public.applications to anon, authenticated;
+grant select, update on public.applications to authenticated;
+
+-- Policies are dropped-then-created so this whole file is safe to re-run.
+drop policy if exists "public can submit applications" on public.applications;
+drop policy if exists "admins read applications"        on public.applications;
+drop policy if exists "admins update applications"      on public.applications;
+
 -- Anyone (anon landing form) may submit an application, but only as a fresh
 -- pending row — they cannot pre-approve themselves or stamp a decision.
 create policy "public can submit applications"
