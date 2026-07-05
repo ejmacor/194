@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>194 — Border Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Sora:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0B1120;
+    --ink-2: #0F172B;
+    --ink-3: #141D33;
+    --foil: #C8A55E;
+    --foil-bright: #E3C888;
+    --paper: #EDE8DC;
+    --muted: #7C8699;
+    --line: rgba(200,165,94,0.22);
+    --approve: #4CAF7D;
+    --reject: #C05B5B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Sora', sans-serif;
+    font-weight: 300;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 36px;
+  }
+  .brand {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: 0.35em;
+    color: var(--foil);
+  }
+  .brand small {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .officer {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-align: right;
+  }
+  .officer b { color: var(--foil-bright); font-weight: 400; }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .stat {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    padding: 20px 22px;
+  }
+  .stat .num {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: 30px;
+    color: var(--foil-bright);
+    line-height: 1.1;
+  }
+  .stat .lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Tabs + search */
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .tabs { display: flex; gap: 8px; }
+  .tab {
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: var(--paper); }
+  .tab.active { color: var(--foil-bright); border-color: var(--line); background: var(--ink-2); }
+  .tab .count {
+    font-family: 'Share Tech Mono', monospace;
+    margin-left: 6px;
+    color: var(--foil);
+  }
+  .search {
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    color: var(--paper);
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 11px 16px;
+    width: 240px;
+  }
+  .search::placeholder { color: var(--muted); }
+  .search:focus { border-color: var(--foil); outline: none; }
+  :focus-visible { outline: 2px solid var(--foil-bright); outline-offset: 2px; }
+
+  /* Queue */
+  .queue { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: 18px;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    padding: 18px 20px;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .card.leaving { opacity: 0; transform: translateX(24px); }
+  .flag {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+  }
+  .who .name { font-weight: 500; font-size: 16px; color: var(--paper); }
+  .who .meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .who .meta b { color: var(--foil); font-weight: 400; }
+  .iglink {
+    color: var(--foil-bright);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(227,200,136,0.35);
+    padding-bottom: 1px;
+    transition: border-color 0.15s;
+  }
+  .iglink:hover { border-color: var(--foil-bright); }
+  .who .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: rgba(124,134,153,0.75);
+    margin-top: 6px;
+  }
+  .actions { display: flex; gap: 10px; align-items: center; }
+  .act {
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    border-radius: 2px;
+    border: 1px solid;
+    background: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .act.approve { color: var(--approve); border-color: rgba(76,175,125,0.45); }
+  .act.approve:hover { background: var(--approve); color: var(--ink); }
+  .act.reject { color: var(--reject); border-color: rgba(192,91,91,0.45); }
+  .act.reject:hover { background: var(--reject); color: var(--ink); }
+  .status-pill {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 2px;
+    transform: rotate(-2deg);
+  }
+  .status-pill.approved { color: var(--approve); border-color: rgba(76,175,125,0.5); }
+  .status-pill.rejected { color: var(--reject); border-color: rgba(192,91,91,0.5); }
+  .undo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    background: none; border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .undo:hover { color: var(--foil-bright); }
+
+  .empty {
+    text-align: center;
+    padding: 80px 20px;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+  }
+  .empty .big {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    letter-spacing: 0.2em;
+    color: var(--foil);
+    text-transform: uppercase;
+  }
+  .empty p { color: var(--muted); font-size: 13px; margin-top: 10px; }
+
+  .demo-note {
+    margin-top: 40px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: rgba(124,134,153,0.6);
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .card { grid-template-columns: 44px 1fr; }
+    .actions { grid-column: 1 / -1; justify-content: flex-end; }
+    .search { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">194<small>Border Control</small></div>
+    <div class="officer">Officer on duty<br><b>E. MACOR</b></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">Applications</div></div>
+    <div class="stat"><div class="num" id="stat-pending">0</div><div class="lbl">In queue</div></div>
+    <div class="stat"><div class="num" id="stat-rate">0%</div><div class="lbl">Approval rate</div></div>
+    <div class="stat"><div class="num" id="stat-countries">0</div><div class="lbl">Countries</div></div>
+  </div>
+
+  <div class="controls">
+    <div class="tabs">
+      <button class="tab active" data-tab="pending">Queue<span class="count" id="c-pending"></span></button>
+      <button class="tab" data-tab="approved">Approved<span class="count" id="c-approved"></span></button>
+      <button class="tab" data-tab="rejected">Rejected<span class="count" id="c-rejected"></span></button>
+    </div>
+    <input class="search" id="search" type="text" placeholder="Search name, country, city…">
+  </div>
+
+  <div class="queue" id="queue"></div>
+
+  <div class="demo-note">DEMO MODE &middot; MOCK DATA &middot; ACTIONS RESET ON REFRESH &middot; NEXT STOP: SUPABASE</div>
+
+</div>
+
+<script>
+  var apps = [
+    { id: 1,  name: "Mateus Oliveira",   flag: "🇧🇷", country: "Brazil",       city: "Miami, FL",        email: "mateus.o@gmail.com",      ig: "mateus.oliv",      date: "Jul 5, 09:12", status: "pending" },
+    { id: 2,  name: "Yuna Kim",          flag: "🇰🇷", country: "South Korea",  city: "Los Angeles, CA",  email: "yunakim@naver.com",       ig: "yuna.kim_",        date: "Jul 5, 08:47", status: "pending" },
+    { id: 3,  name: "Chidi Okafor",      flag: "🇳🇬", country: "Nigeria",      city: "Houston, TX",      email: "c.okafor@outlook.com",    ig: "chidi.okafor",     date: "Jul 5, 08:30", status: "pending" },
+    { id: 4,  name: "Priya Raghavan",    flag: "🇮🇳", country: "India",        city: "San Jose, CA",     email: "priya.r@gmail.com",       ig: "priya.raghavan",   date: "Jul 5, 07:58", status: "pending" },
+    { id: 5,  name: "Valentina Restrepo",flag: "🇨🇴", country: "Colombia",     city: "New York, NY",     email: "vale.restrepo@gmail.com", ig: "vale.restrepo",    date: "Jul 5, 07:21", status: "pending" },
+    { id: 6,  name: "Lukas Brenner",     flag: "🇩🇪", country: "Germany",      city: "Chicago, IL",      email: "l.brenner@gmx.de",        ig: "lukas.brnnr",      date: "Jul 4, 23:44", status: "pending" },
+    { id: 7,  name: "Aiko Tanaka",       flag: "🇯🇵", country: "Japan",        city: "Seattle, WA",      email: "aiko.t@icloud.com",       ig: "aiko_tnk",         date: "Jul 4, 22:10", status: "pending" },
+    { id: 8,  name: "Omar El-Sayed",     flag: "🇪🇬", country: "Egypt",        city: "Jersey City, NJ",  email: "omar.elsayed@gmail.com",  ig: "omar.elsayed",     date: "Jul 4, 21:03", status: "pending" },
+    { id: 9,  name: "Ines Duarte",       flag: "🇵🇹", country: "Portugal",     city: "Boston, MA",       email: "ines.duarte@sapo.pt",     ig: "ines.duarte.pt",   date: "Jul 4, 19:39", status: "pending" },
+    { id: 10, name: "Bartek Kowalski",   flag: "🇵🇱", country: "Poland",       city: "Brooklyn, NY",     email: "bartek.k@wp.pl",          ig: "bartek.kow",       date: "Jul 4, 18:52", status: "pending" },
+    { id: 11, name: "Thao Nguyen",       flag: "🇻🇳", country: "Vietnam",      city: "Garden Grove, CA", email: "thao.ng@gmail.com",       ig: "thao.ngyn",        date: "Jul 4, 17:15", status: "pending" },
+    { id: 12, name: "Santiago Álvarez",  flag: "🇦🇷", country: "Argentina",    city: "Austin, TX",       email: "santi.alv@gmail.com",     ig: "santi.alvz",       date: "Jul 4, 16:02", status: "pending" },
+    { id: 13, name: "Amara Mensah",      flag: "🇬🇭", country: "Ghana",        city: "Washington, DC",   email: "amara.m@yahoo.com",       ig: "amara.mensah",     date: "Jul 4, 14:48", status: "approved" },
+    { id: 14, name: "Elif Yilmaz",       flag: "🇹🇷", country: "Turkey",       city: "Philadelphia, PA", email: "elif.y@hotmail.com",      ig: "elif.ylmz",        date: "Jul 4, 13:20", status: "approved" },
+    { id: 15, name: "Marco Bianchi",     flag: "🇮🇹", country: "Italy",        city: "San Francisco, CA",email: "marco.b@libero.it",       ig: "marco.bianchi.sf", date: "Jul 4, 11:55", status: "approved" },
+    { id: 16, name: "Jake Miller",       flag: "🇺🇸", country: "United States",city: "Denver, CO",       email: "jmiller99@gmail.com",     ig: "jakemiller99",     date: "Jul 4, 10:31", status: "rejected" },
+    { id: 17, name: "Sofia Petrova",     flag: "🇧🇬", country: "Bulgaria",     city: "Nashville, TN",    email: "sofia.p@abv.bg",          ig: "sofia.petrova.bg", date: "Jul 4, 09:17", status: "approved" }
+  ];
+
+  var currentTab = "pending";
+  var query = "";
+
+  function counts() {
+    var c = { pending: 0, approved: 0, rejected: 0 };
+    apps.forEach(function (a) { c[a.status]++; });
+    return c;
+  }
+
+  function renderStats() {
+    var c = counts();
+    var decided = c.approved + c.rejected;
+    var rate = decided ? Math.round((c.approved / decided) * 100) : 0;
+    var countries = {};
+    apps.forEach(function (a) { countries[a.country] = 1; });
+    document.getElementById("stat-total").textContent = apps.length;
+    document.getElementById("stat-pending").textContent = c.pending;
+    document.getElementById("stat-rate").textContent = rate + "%";
+    document.getElementById("stat-countries").textContent = Object.keys(countries).length;
+    document.getElementById("c-pending").textContent = c.pending;
+    document.getElementById("c-approved").textContent = c.approved;
+    document.getElementById("c-rejected").textContent = c.rejected;
+  }
+
+  function cardHTML(a) {
+    var right;
+    if (a.status === "pending") {
+      right = '<div class="actions">' +
+        '<button class="act approve" onclick="decide(' + a.id + ',\'approved\')">Approve</button>' +
+        '<button class="act reject" onclick="decide(' + a.id + ',\'rejected\')">Reject</button>' +
+        '</div>';
+    } else {
+      right = '<div class="actions">' +
+        '<span class="status-pill ' + a.status + '">' + a.status + '</span>' +
+        '<button class="undo" onclick="decide(' + a.id + ',\'pending\')">Undo</button>' +
+        '</div>';
+    }
+    return '<div class="card" id="card-' + a.id + '">' +
+      '<div class="flag">' + a.flag + '</div>' +
+      '<div class="who">' +
+        '<div class="name">' + a.name + '</div>' +
+        '<div class="meta"><b>' + a.country + '</b> &middot; ' + a.city + ' &middot; ' +
+          '<a class="iglink" href="https://instagram.com/' + a.ig + '" target="_blank" rel="noopener noreferrer">@' + a.ig + ' ↗</a></div>' +
+        '<div class="sub">' + a.email + ' &middot; APPLIED ' + a.date.toUpperCase() + '</div>' +
+      '</div>' + right + '</div>';
+  }
+
+  function render() {
+    renderStats();
+    var q = query.toLowerCase();
+    var list = apps.filter(function (a) {
+      if (a.status !== currentTab) return false;
+      if (!q) return true;
+      return (a.name + " " + a.country + " " + a.city).toLowerCase().indexOf(q) !== -1;
+    });
+    var el = document.getElementById("queue");
+    if (!list.length) {
+      var msg = currentTab === "pending" ? "Queue clear" : "Nothing here";
+      var sub = currentTab === "pending" ? "Every application has been processed. The border rests." : "No " + currentTab + " applications" + (q ? " matching your search." : ".");
+      el.innerHTML = '<div class="empty"><div class="big">' + msg + '</div><p>' + sub + '</p></div>';
+      return;
+    }
+    el.innerHTML = list.map(cardHTML).join("");
+  }
+
+  window.decide = function (id, status) {
+    var card = document.getElementById("card-" + id);
+    var apply = function () {
+      for (var i = 0; i < apps.length; i++) if (apps[i].id === id) apps[i].status = status;
+      render();
+    };
+    if (card && status !== "pending") {
+      card.classList.add("leaving");
+      setTimeout(apply, 280);
+    } else {
+      apply();
+    }
+  };
+
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("active"); });
+      t.classList.add("active");
+      currentTab = t.getAttribute("data-tab");
+      render();
+    });
+  });
+
+  document.getElementById("search").addEventListener("input", function (e) {
+    query = e.target.value;
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
