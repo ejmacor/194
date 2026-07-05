@@ -22,3 +22,6 @@ Thumbs.db
 
 # Claude
 .claude/settings.local.json
+
+# Supabase CLI access token (local, never commit)
+.supabase-token
