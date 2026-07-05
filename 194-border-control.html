@@ -707,6 +707,17 @@
     };
     if (card && status !== 'pending') setTimeout(commit, 280);
     else commit();
+
+    // Fire the decision email (approve/reject only). Non-blocking: a mail
+    // failure doesn't undo the decision, but we warn the officer.
+    if (status === 'approved' || status === 'rejected') {
+      supabase.functions
+        .invoke('send-decision-email', { body: { application_id: id, decision: status } })
+        .then(({ error: mailErr }) => {
+          if (mailErr) toast('Decision saved, but the email failed to send.', true);
+        })
+        .catch(() => toast('Decision saved, but the email failed to send.', true));
+    }
   }
 
   // Event delegation for approve/reject/undo buttons.
