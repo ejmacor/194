@@ -10,7 +10,7 @@
 
 194 is an invite-only social network for internationals living in the US. US passport holders cannot join — identity verification at signup checks the issuing country of a government ID and gates entry. Positioning is Raya-style exclusivity: apply, wait, get approved, belong.
 
-**One-liner:** 195 countries. One doesn't get in.
+**One-liner:** 195 countries. Yours made it.
 
 **Target user:** foreign-born people living in the US (~50M+ population) — students, H-1B/O-1 workers, dual citizens, recent arrivals — who want a social layer built around the shared experience of being international in America.
 

@@ -153,7 +153,7 @@ function shell(stamp: string, stampColor: string, bodyHtml: string): string {
           ${bodyHtml}
         </td></tr>
         <tr><td style="padding:18px 36px;border-top:1px solid rgba(200,165,94,0.18);color:#5b6577;font-size:11px;letter-spacing:1px;text-align:center;">
-          194 &middot; 195 countries. One doesn't get in.
+          194 &middot; 195 countries. Yours made it.
         </td></tr>
       </table>
     </td></tr>
